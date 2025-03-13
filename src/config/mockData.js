@@ -15,15 +15,7 @@ const months = [
 ];
 
 export const mockData = {
-  months, // Include months in mockData
-  dashboardStats: {
-    totalCVs: 1250,
-    totalCoverLetters: 850,
-    totalUsers: 2500,
-    totalRevenue: 45750,
-    monthlyGrowth: 15.5,
-    activeUsers: 1800,
-  },
+  months,
   cvStats: {
     conversionRate: 68.5,
     createdPerMonth: [
