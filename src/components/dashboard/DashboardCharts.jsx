@@ -8,26 +8,38 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       grid: {
-        color: "rgba(255, 255, 255, 0.1)",
+        color: "rgba(148, 163, 184, 0.1)",
       },
       ticks: {
-        color: "rgba(255, 255, 255, 0.8)",
+        color: "#94A3B8",
       },
     },
     x: {
       grid: {
-        color: "rgba(255, 255, 255, 0.1)",
+        color: "rgba(148, 163, 184, 0.1)",
       },
       ticks: {
-        color: "rgba(255, 255, 255, 0.8)",
+        color: "#94A3B8",
       },
     },
   },
   plugins: {
     legend: {
       labels: {
-        color: "rgba(255, 255, 255, 0.8)",
+        color: "#94A3B8",
+        padding: 20,
+        font: {
+          size: 12,
+          weight: "500",
+        },
       },
+    },
+    tooltip: {
+      backgroundColor: "rgba(15, 23, 42, 0.9)",
+      titleColor: "#E2E8F0",
+      bodyColor: "#E2E8F0",
+      padding: 12,
+      boxPadding: 8,
     },
   },
 };
@@ -39,8 +51,20 @@ const pieOptions = {
     legend: {
       position: "right",
       labels: {
-        color: "rgba(255, 255, 255, 0.8)",
+        color: "#94A3B8",
+        padding: 20,
+        font: {
+          size: 12,
+          weight: "500",
+        },
       },
+    },
+    tooltip: {
+      backgroundColor: "rgba(15, 23, 42, 0.9)",
+      titleColor: "#E2E8F0",
+      bodyColor: "#E2E8F0",
+      padding: 12,
+      boxPadding: 8,
     },
   },
 };
@@ -51,16 +75,20 @@ const DashboardCharts = ({ chartData }) => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Ship Types Distribution */}
-        <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md overflow-hidden shadow-lg rounded-xl border border-gray-700 p-6">
-          <h3 className="text-lg font-semibold mb-4">Fleet Distribution</h3>
+        <div className="bg-slate-900 overflow-hidden shadow-lg rounded-lg border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold mb-4 text-slate-200">
+            Fleet Distribution
+          </h3>
           <div className="h-[300px]">
             <Pie data={chartData.shipTypes} options={pieOptions} />
           </div>
         </div>
 
         {/* Monthly Cargo Volume */}
-        <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md overflow-hidden shadow-lg rounded-xl border border-gray-700 p-6">
-          <h3 className="text-lg font-semibold mb-4">Monthly Cargo Volume</h3>
+        <div className="bg-slate-900 overflow-hidden shadow-lg rounded-lg border border-slate-700 p-6">
+          <h3 className="text-lg font-semibold mb-4 text-slate-200">
+            Monthly Cargo Volume
+          </h3>
           <div className="h-[300px]">
             <Bar data={chartData.monthlyCargoVolume} options={chartOptions} />
           </div>
@@ -68,8 +96,8 @@ const DashboardCharts = ({ chartData }) => {
       </div>
 
       {/* Fuel Efficiency Trend */}
-      <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md overflow-hidden shadow-lg rounded-xl border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">
+      <div className="bg-slate-900 overflow-hidden shadow-lg rounded-lg border border-slate-700 p-6">
+        <h3 className="text-lg font-semibold mb-4 text-slate-200">
           Fleet Fuel Efficiency Trend
         </h3>
         <div className="h-[300px]">
