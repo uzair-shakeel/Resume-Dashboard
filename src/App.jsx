@@ -1,6 +1,6 @@
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { isAuthenticated, isAdmin } from "./services/authService";
 
 import Sidebar from "./components/shared/Sidebar";
 import { MockModeProvider } from "./context/MockModeContext";
@@ -12,18 +12,15 @@ import Users from "./pages/Users";
 import Revenue from "./pages/Revenue";
 import LoginPage from "./pages/LoginPage";
 
-// Set up axios defaults
-axios.defaults.withCredentials = true;
-
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const authenticated = isAuthenticated();
+  const userIsAdmin = isAdmin();
 
-  if (!token) {
+  if (!authenticated) {
     return <Navigate to="/login" />;
   }
 
-  if (adminOnly && user.role !== "admin") {
+  if (adminOnly && !userIsAdmin) {
     return <Navigate to="/" />;
   }
 
@@ -32,16 +29,37 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
 function App() {
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Small delay to prevent flash of content during authentication check
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Determine if we're on the login page
   const isLoginPage = location.pathname === "/login";
 
   // If user is logged in and tries to access login page, redirect to dashboard
-  if (isLoginPage && localStorage.getItem("token")) {
+  if (!loading && isLoginPage && isAuthenticated()) {
     return <Navigate to="/" />;
   }
 
   // If it's the login page, render only the LoginPage component
   if (isLoginPage) {
     return <LoginPage />;
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <div className="text-slate-200 text-xl">Loading...</div>
+      </div>
+    );
   }
 
   return (
@@ -97,6 +115,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>

@@ -2,20 +2,21 @@
 
 A modern dashboard application for managing and visualizing data from the Resume-Builder application.
 
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - Node.js (version 14 or higher)
 - Resume-Builder API running on http://localhost:3000
 
-### Installation
+## Getting Started
 
-1. Clone the repository:
+### Installing and Running the Resume-Builder API
+
+Before running the dashboard, you need to set up and start the Resume-Builder API:
+
+1. Navigate to the Resume-Builder directory:
 
 ```bash
-git clone <repository-url>
-cd Resume-Dashboard
+cd ../Resume-Builder
 ```
 
 2. Install dependencies:
@@ -24,13 +25,51 @@ cd Resume-Dashboard
 npm install
 ```
 
-3. Start the development server:
+3. Seed the database with initial users:
+
+```bash
+npm run seed
+```
+
+4. Start the API server:
+
+```bash
+npm run dev
+```
+
+The API will be available at http://localhost:3000.
+
+### Installing and Running the Dashboard
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the development server:
 
 ```bash
 npm run dev
 ```
 
 The dashboard will be available at http://localhost:5173 (or another port if 5173 is in use).
+
+## Authentication
+
+### Login Credentials
+
+After running the seed script, the following users will be created:
+
+**Admin User:**
+
+- Email: admin@resumebuilder.com
+- Password: admin123
+
+**Regular User:**
+
+- Email: user@resumebuilder.com
+- Password: user123
 
 ## API Integration
 
@@ -61,15 +100,12 @@ The dashboard follows a modular architecture with:
 
 The following services handle API integration:
 
+- `authService.js`: Authentication operations
 - `userService.js`: User management operations
 - `cvService.js`: CV-related operations
 - `coverLetterService.js`: Cover letter operations
 - `analyticsService.js`: Analytics data retrieval
 - `paymentService.js`: Payment operations
-
-## Note on Authentication
-
-The current implementation assumes the Resume-Builder API requires no authentication. If you implement authentication on the Resume-Builder side, update the API configuration in `/src/services/api.js` to include the necessary authentication headers.
 
 ## Troubleshooting
 

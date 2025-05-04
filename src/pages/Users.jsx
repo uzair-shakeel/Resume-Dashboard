@@ -233,74 +233,74 @@ const Users = () => {
         {/* User Form Modal */}
         {isAddingUser && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-70">
-            <motion.div
+          <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-slate-900 rounded-lg p-6 w-full max-w-2xl shadow-lg border border-slate-700"
             >
               <h2 className="text-xl font-semibold mb-4 text-slate-200">
-                {editingUser ? "Edit User" : "Add New User"}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+              {editingUser ? "Edit User" : "Add New User"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                     <label className="block text-sm font-medium mb-1 text-slate-300">
                       Name
                     </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                       className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-                  <div>
+                    required
+                  />
+                </div>
+                <div>
                     <label className="block text-sm font-medium mb-1 text-slate-300">
-                      Email
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                      className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                      placeholder="Enter email address"
+                  />
+                </div>
+                {!editingUser && (
+                  <div>
+                      <label className="block text-sm font-medium mb-1 text-slate-300">
+                      Password
                     </label>
                     <input
-                      type="email"
-                      value={formData.email}
+                      type="password"
+                      value={formData.password}
                       onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
+                        setFormData({ ...formData, password: e.target.value })
                       }
-                      className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                      placeholder="Enter email address"
+                        className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required={!editingUser}
+                        placeholder="Enter password"
                     />
                   </div>
-                  {!editingUser && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1 text-slate-300">
-                        Password
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required={!editingUser}
-                        placeholder="Enter password"
-                      />
-                    </div>
-                  )}
-                  <div>
+                )}
+                <div>
                     <label className="block text-sm font-medium mb-1 text-slate-300">
                       Role
                     </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) =>
-                        setFormData({ ...formData, role: e.target.value })
-                      }
+                  <select
+                    value={formData.role}
+                    onChange={(e) =>
+                      setFormData({ ...formData, role: e.target.value })
+                    }
                       className="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    >
+                    required
+                  >
                       {availableRoles.map((role) => (
                         <option
                           key={role.value}
@@ -308,22 +308,22 @@ const Users = () => {
                           className="bg-slate-800"
                         >
                           {role.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              </div>
                 <div className="flex justify-end space-x-4 mt-6">
-                  <button
-                    type="button"
-                    onClick={resetForm}
+                <button
+                  type="button"
+                  onClick={resetForm}
                     className="px-4 py-2 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
                     disabled={actionLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
                     disabled={actionLoading}
                   >
@@ -356,10 +356,10 @@ const Users = () => {
                     ) : (
                       "Create User"
                     )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                </button>
+              </div>
+            </form>
+          </motion.div>
           </div>
         )}
 
@@ -392,31 +392,31 @@ const Users = () => {
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <motion.tr
-                      key={user._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                  <motion.tr
+                    key={user._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                       className="hover:bg-slate-800"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div>
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
                             <div className="text-sm font-medium text-slate-200">
-                              {user.name}
-                            </div>
+                            {user.name}
+                          </div>
                             <div className="text-sm text-slate-400">
-                              {user.email}
-                            </div>
+                            {user.email}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <select
+                      <select
                             value={user.role || ""}
-                            onChange={(e) =>
-                              handleRoleChange(user._id, e.target.value)
-                            }
+                        onChange={(e) =>
+                          handleRoleChange(user._id, e.target.value)
+                        }
                             className="bg-slate-800 text-slate-200 border border-slate-700 rounded px-3 py-1 focus:ring-indigo-500 focus:border-indigo-500"
                             disabled={
                               actionLoading || user._id === currentUser?._id
@@ -429,43 +429,43 @@ const Users = () => {
                                 className="bg-slate-800"
                               >
                                 {role.label}
-                              </option>
-                            ))}
-                          </select>
+                          </option>
+                        ))}
+                      </select>
                         </div>
-                      </td>
+                    </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-3">
-                          <button
-                            onClick={() => {
-                              setEditingUser(user);
-                              setFormData({
-                                name: user.name,
-                                email: user.email,
-                                role: user.role,
+                      <button
+                        onClick={() => {
+                          setEditingUser(user);
+                          setFormData({
+                            name: user.name,
+                            email: user.email,
+                            role: user.role,
                                 status: user.status || STATUS.ACTIVE,
-                              });
-                              setIsAddingUser(true);
-                            }}
+                          });
+                          setIsAddingUser(true);
+                        }}
                             className="text-blue-400 hover:text-blue-300 disabled:opacity-50"
-                            title="Edit User"
+                        title="Edit User"
                             disabled={actionLoading}
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
                           {user._id !== currentUser?._id && (
-                            <button
-                              onClick={() => handleDelete(user._id)}
+                        <button
+                          onClick={() => handleDelete(user._id)}
                               className="text-red-400 hover:text-red-300 disabled:opacity-50"
-                              title="Delete User"
+                          title="Delete User"
                               disabled={actionLoading}
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
                         </div>
-                      </td>
-                    </motion.tr>
+                    </td>
+                  </motion.tr>
                   ))
                 )}
               </tbody>
