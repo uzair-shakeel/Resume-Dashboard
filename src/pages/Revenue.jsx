@@ -1,5 +1,4 @@
-import React from "react";
-import { mockData } from "../config/mockData";
+import React, { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +12,12 @@ import {
   Legend,
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
+import {
+  getRevenueAnalytics,
+  getDetailedRevenueAnalytics,
+} from "../services/analyticsService";
+import { getAllPayments } from "../services/paymentService";
+import { toast } from "react-toastify";
 
 ChartJS.register(
   CategoryScale,
@@ -27,7 +32,57 @@ ChartJS.register(
 );
 
 const Revenue = () => {
-  const { revenueStats, months } = mockData;
+  const [revenueStats, setRevenueStats] = useState({
+    totalRevenue: 0,
+    monthlyRevenue: [],
+    revenueBySource: [],
+  });
+  const [detailedStats, setDetailedStats] = useState({
+    monthly: [],
+    arpu: 0,
+    arppu: 0,
+    conversionRate: 0,
+  });
+  const [payments, setPayments] = useState([]);
+  const [months, setMonths] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch revenue analytics
+        const revenueData = await getRevenueAnalytics();
+        setRevenueStats({
+          totalRevenue: revenueData.totalRevenue || 0,
+          monthlyRevenue: revenueData.monthlyRevenue || [],
+          revenueBySource: revenueData.revenueBySource || [],
+        });
+        setMonths(revenueData.months || []);
+
+        // Fetch detailed revenue analytics
+        const detailedData = await getDetailedRevenueAnalytics();
+        setDetailedStats({
+          monthly: detailedData.monthly || [],
+          arpu: detailedData.arpu || 0,
+          arppu: detailedData.arppu || 0,
+          conversionRate: detailedData.conversionRate || 0,
+        });
+
+        // Fetch payments
+        const paymentsData = await getAllPayments();
+        setPayments(paymentsData.payments || []);
+      } catch (error) {
+        console.error("Error fetching revenue data:", error);
+        toast.error("Failed to fetch revenue analytics data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const lineChartData = {
     labels: months,
@@ -157,6 +212,16 @@ const Revenue = () => {
     }).format(amount);
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-slate-200 text-xl">
+          Loading revenue analytics...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6 text-slate-200">
@@ -180,7 +245,10 @@ const Revenue = () => {
           </h3>
           <p className="text-3xl font-bold text-emerald-500 mt-2">
             {formatCurrency(
-              revenueStats.monthlyRevenue.reduce((a, b) => a + b, 0) / 12
+              revenueStats.monthlyRevenue.length > 0
+                ? revenueStats.monthlyRevenue.reduce((a, b) => a + b, 0) /
+                    revenueStats.monthlyRevenue.length
+                : 0
             )}
           </p>
           <p className="text-sm text-slate-400 mt-1">Per Month</p>
@@ -189,12 +257,45 @@ const Revenue = () => {
           <h3 className="text-lg font-semibold text-blue-400">Latest Month</h3>
           <p className="text-3xl font-bold text-blue-500 mt-2">
             {formatCurrency(
-              revenueStats.monthlyRevenue[
-                revenueStats.monthlyRevenue.length - 1
-              ]
+              revenueStats.monthlyRevenue.length > 0
+                ? revenueStats.monthlyRevenue[
+                    revenueStats.monthlyRevenue.length - 1
+                  ]
+                : 0
             )}
           </p>
           <p className="text-sm text-slate-400 mt-1">Current Period</p>
+        </div>
+      </div>
+
+      {/* Additional Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
+          <h3 className="text-lg font-semibold text-purple-400">
+            ARPU (Average Revenue Per User)
+          </h3>
+          <p className="text-3xl font-bold text-purple-500 mt-2">
+            {formatCurrency(detailedStats.arpu)}
+          </p>
+          <p className="text-sm text-slate-400 mt-1">All Users</p>
+        </div>
+        <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
+          <h3 className="text-lg font-semibold text-pink-400">
+            ARPPU (Average Revenue Per Paying User)
+          </h3>
+          <p className="text-3xl font-bold text-pink-500 mt-2">
+            {formatCurrency(detailedStats.arppu)}
+          </p>
+          <p className="text-sm text-slate-400 mt-1">Paying Users Only</p>
+        </div>
+        <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
+          <h3 className="text-lg font-semibold text-indigo-400">
+            Conversion Rate
+          </h3>
+          <p className="text-3xl font-bold text-indigo-500 mt-2">
+            {detailedStats.conversionRate}%
+          </p>
+          <p className="text-sm text-slate-400 mt-1">Users to Paying Users</p>
         </div>
       </div>
 
@@ -202,24 +303,22 @@ const Revenue = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
-            Monthly Revenue Trend
+            Monthly Revenue
           </h2>
           <Line options={chartOptions} data={lineChartData} />
         </div>
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
-            Revenue by Plan
+            Revenue by Subscription Type
           </h2>
-          <div className="relative" style={{ height: "300px" }}>
-            <Doughnut options={doughnutOptions} data={subscriptionChartData} />
-          </div>
+          <Doughnut options={doughnutOptions} data={subscriptionChartData} />
         </div>
       </div>
 
-      {/* Monthly Breakdown Table */}
-      <div className="rounded-lg overflow-hidden shadow-lg bg-slate-900 border border-slate-700">
+      {/* Revenue Details Table */}
+      <div className="mt-8 rounded-lg overflow-hidden shadow-lg bg-slate-900 border border-slate-700">
         <h2 className="text-lg font-semibold p-6 text-slate-200 border-b border-slate-700">
-          Monthly Revenue Breakdown
+          Monthly Breakdown
         </h2>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto">
@@ -232,46 +331,46 @@ const Revenue = () => {
                   Revenue
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Growth
+                  Users
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  ARPU
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Conversion Rate
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {months.map((month, index) => (
+              {detailedStats.monthly.map((month) => (
                 <tr
-                  key={month}
+                  key={`${month.year}-${month.month}`}
                   className="bg-slate-900 hover:bg-slate-800 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                    {month}
+                    {month.monthName} {month.year}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-yellow-400">
+                    {formatCurrency(month.amount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                    {formatCurrency(revenueStats.monthlyRevenue[index])}
+                    {month.users} ({month.payingUsers} paying)
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {formatCurrency(month.arpu)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {index === 0 ? (
-                      <span className="text-slate-400">-</span>
-                    ) : (
-                      <span
-                        className={`${
-                          ((revenueStats.monthlyRevenue[index] -
-                            revenueStats.monthlyRevenue[index - 1]) /
-                            revenueStats.monthlyRevenue[index - 1]) *
-                            100 >
-                          0
-                            ? "text-emerald-400"
-                            : "text-rose-400"
-                        }`}
-                      >
-                        {(
-                          ((revenueStats.monthlyRevenue[index] -
-                            revenueStats.monthlyRevenue[index - 1]) /
-                            revenueStats.monthlyRevenue[index - 1]) *
-                          100
-                        ).toFixed(1)}
-                        %
-                      </span>
-                    )}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        month.conversionRate > 30
+                          ? "bg-green-900 text-green-200"
+                          : month.conversionRate > 15
+                          ? "bg-yellow-900 text-yellow-200"
+                          : "bg-red-900 text-red-200"
+                      }`}
+                    >
+                      {month.conversionRate}%
+                    </span>
                   </td>
                 </tr>
               ))}

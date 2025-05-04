@@ -1,5 +1,4 @@
-import React from "react";
-import { mockData } from "../config/mockData";
+import React, { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,6 +13,15 @@ import {
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { FaFileAlt, FaEnvelope, FaUsers, FaDollarSign } from "react-icons/fa";
+import {
+  getCVAnalytics,
+  getCoverLetterAnalytics,
+  getRevenueAnalytics,
+  getAnalyticsTotals,
+  getUserAnalytics,
+} from "../services/analyticsService";
+import { getAllUsers } from "../services/userService";
+import { toast } from "react-toastify";
 
 ChartJS.register(
   CategoryScale,
@@ -28,15 +36,208 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { cvStats, coverLetterStats, userStats, revenueStats, months } =
-    mockData;
+  const [loading, setLoading] = useState(true);
+  const [totalsData, setTotalsData] = useState({
+    totalCVs: 0,
+    totalCoverLetters: 0,
+    downloads: {
+      uniqueCVs: 0,
+      uniqueCoverLetters: 0,
+      totalCVDownloads: 0,
+      totalCoverLetterDownloads: 0,
+    },
+    monthly: {
+      cvs: { created: [], downloaded: [] },
+      coverLetters: { created: [], downloaded: [] },
+    },
+  });
+  const [cvStats, setCvStats] = useState({
+    conversionRate: 0,
+    createdPerMonth: [],
+    downloadedPerMonth: [],
+    popularTemplates: [],
+  });
+  const [coverLetterStats, setCoverLetterStats] = useState({
+    conversionRate: 0,
+    createdPerMonth: [],
+    downloadedPerMonth: [],
+    popularTemplates: [],
+  });
+  const [revenueStats, setRevenueStats] = useState({
+    totalRevenue: 0,
+    monthlyRevenue: [],
+    revenueBySource: [],
+  });
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    monthlyActiveUsers: [],
+    userTypes: [],
+    userGrowth: [],
+  });
+  const [months, setMonths] = useState([]);
 
-  const revenueChartData = {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Initialize data with default values in case API calls fail
+        let totals = {
+          totalCVs: 0,
+          totalCoverLetters: 0,
+          monthly: {
+            cvs: { created: [], downloaded: [] },
+            coverLetters: { created: [], downloaded: [] },
+          },
+        };
+
+        let monthsData = [];
+        let revenueData = {
+          totalRevenue: 0,
+          monthlyRevenue: [],
+          revenueBySource: [],
+        };
+        let userData = { users: [], totalCount: 0 };
+
+        // Fetch analytics totals
+        try {
+          totals = await getAnalyticsTotals();
+          console.log("Totals data received:", totals);
+          console.log(
+            "Monthly data structure:",
+            Object.keys(totals.monthly || {})
+          );
+          console.log(
+            "CV data structure:",
+            Object.keys(totals.monthly?.cvs || {})
+          );
+          console.log(
+            "CoverLetters data structure:",
+            Object.keys(totals.monthly?.coverLetters || {})
+          );
+          setTotalsData(totals);
+
+          // Process months data from the totals
+          monthsData =
+            totals.monthly?.cvs?.created?.map(
+              (item) => `${item.monthName} ${item.year}`
+            ) || [];
+          setMonths(monthsData);
+        } catch (error) {
+          console.error("Error fetching analytics totals:", error);
+          toast.error("Failed to load analytics totals data");
+        }
+
+        // Process CV data
+        setCvStats({
+          conversionRate: 0, // Calculate if needed
+          createdPerMonth:
+            totals.monthly?.cvs?.created?.map((item) => item.count) || [],
+          downloadedPerMonth:
+            totals.monthly?.cvs?.downloaded?.map((item) => item.count) || [],
+          popularTemplates: [], // This might need to come from another endpoint
+        });
+
+        // Process Cover Letter data
+        setCoverLetterStats({
+          conversionRate: 0, // Calculate if needed
+          createdPerMonth:
+            totals.monthly?.coverLetters?.created?.map((item) => item.count) ||
+            [],
+          downloadedPerMonth:
+            totals.monthly?.coverLetters?.downloaded?.map(
+              (item) => item.count
+            ) || [],
+          popularTemplates: [], // This might need to come from another endpoint
+        });
+        console.log("Cover letter data:", totals.monthly?.coverLetters);
+
+        // Fetch Revenue data (keep this as it's not in totals)
+        try {
+          revenueData = await getRevenueAnalytics();
+          setRevenueStats({
+            totalRevenue: revenueData.totalRevenue || 0,
+            monthlyRevenue: revenueData.monthlyRevenue || [],
+            revenueBySource: revenueData.revenueBySource || [],
+          });
+        } catch (error) {
+          console.error("Error fetching revenue data:", error);
+          toast.error("Failed to load revenue data");
+          setRevenueStats({
+            totalRevenue: 0,
+            monthlyRevenue: Array(monthsData.length).fill(0),
+            revenueBySource: [],
+          });
+        }
+
+        // Fetch User data
+        try {
+          userData = await getAllUsers();
+
+          // Also fetch user analytics data
+          const userAnalytics = await getUserAnalytics();
+          console.log("User analytics data:", userAnalytics);
+
+          // Process user data to get stats
+          const totalUsers = userAnalytics.totalUsers || 0;
+          const activeUsers =
+            userData.users?.filter((user) => user.status === "active").length ||
+            0;
+
+          // Extract user types for chart
+          const userTypeCounts = {};
+          userData.users?.forEach((user) => {
+            const userType = user.role || "Free Users";
+            userTypeCounts[userType] = (userTypeCounts[userType] || 0) + 1;
+          });
+
+          const userTypes = Object.keys(userTypeCounts).map((type) => ({
+            type,
+            count: userTypeCounts[type],
+          }));
+
+          // Get monthly user data from the analytics
+          const monthlyActiveUsers =
+            userAnalytics.monthly?.map((month) => month.count) ||
+            monthsData.map(() => Math.round(activeUsers * 0.8));
+
+          setUserStats({
+            totalUsers,
+            activeUsers,
+            userTypes,
+            monthlyActiveUsers,
+            // Calculate user growth from the monthly data
+            userGrowth: calculateGrowthRate(monthlyActiveUsers),
+          });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          toast.error("Failed to load user data");
+          setUserStats({
+            totalUsers: 0,
+            activeUsers: 0,
+            userTypes: [],
+            monthlyActiveUsers: Array(monthsData.length).fill(0),
+            userGrowth: Array(monthsData.length).fill(0),
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const lineChartData = {
     labels: months,
     datasets: [
       {
         label: "Monthly Revenue",
-        data: revenueStats.monthlyRevenue,
+        data: revenueStats.monthlyRevenue || [],
         borderColor: "rgb(234, 179, 8)",
         backgroundColor: "rgba(234, 179, 8, 0.5)",
         tension: 0.4,
@@ -49,14 +250,14 @@ const Dashboard = () => {
     datasets: [
       {
         label: "CVs Created",
-        data: cvStats.createdPerMonth,
+        data: cvStats.createdPerMonth || [],
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         tension: 0.4,
       },
       {
         label: "Cover Letters Created",
-        data: coverLetterStats.createdPerMonth,
+        data: coverLetterStats.createdPerMonth || [],
         borderColor: "rgb(236, 72, 153)",
         backgroundColor: "rgba(236, 72, 153, 0.5)",
         tension: 0.4,
@@ -65,16 +266,16 @@ const Dashboard = () => {
   };
 
   const userTypeChartData = {
-    labels: userStats.userTypes.map((type) => type.type),
+    labels: userStats.userTypes?.map((type) => type.type) || [],
     datasets: [
       {
-        data: userStats.userTypes.map((type) => type.count),
+        data: userStats.userTypes?.map((type) => type.count) || [],
         backgroundColor: [
-          "rgba(59, 130, 246, 0.8)", // Blue - Monthly Plan
-          "rgba(147, 51, 234, 0.8)", // Purple - Quarterly Plan
-          "rgba(16, 185, 129, 0.8)", // Green - Annual Plan
-          "rgba(234, 179, 8, 0.8)", // Yellow - 14-Hour Plan
-          "rgba(236, 72, 153, 0.8)", // Pink - Free Users
+          "rgba(59, 130, 246, 0.8)", // Blue
+          "rgba(147, 51, 234, 0.8)", // Purple
+          "rgba(16, 185, 129, 0.8)", // Green
+          "rgba(234, 179, 8, 0.8)", // Yellow
+          "rgba(236, 72, 153, 0.8)", // Pink
         ],
         borderColor: [
           "rgb(59, 130, 246)",
@@ -89,15 +290,16 @@ const Dashboard = () => {
   };
 
   const revenueSourceChartData = {
-    labels: revenueStats.revenueBySource.map((source) => source.source),
+    labels: revenueStats.revenueBySource?.map((source) => source.source) || [],
     datasets: [
       {
-        data: revenueStats.revenueBySource.map((source) => source.amount),
+        data:
+          revenueStats.revenueBySource?.map((source) => source.amount) || [],
         backgroundColor: [
-          "rgba(59, 130, 246, 0.8)", // Blue - Monthly Plan
-          "rgba(147, 51, 234, 0.8)", // Purple - Quarterly Plan
-          "rgba(16, 185, 129, 0.8)", // Green - Annual Plan
-          "rgba(234, 179, 8, 0.8)", // Yellow - 14-Hour Plan
+          "rgba(59, 130, 246, 0.8)", // Blue
+          "rgba(147, 51, 234, 0.8)", // Purple
+          "rgba(16, 185, 129, 0.8)", // Green
+          "rgba(234, 179, 8, 0.8)", // Yellow
         ],
         borderColor: [
           "rgb(59, 130, 246)",
@@ -197,6 +399,11 @@ const Dashboard = () => {
   };
 
   const formatCurrency = (amount) => {
+    // Handle undefined, null, or NaN values
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return "$0.00";
+    }
+
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -209,7 +416,7 @@ const Dashboard = () => {
     datasets: [
       {
         label: "CVs",
-        data: cvStats.createdPerMonth,
+        data: cvStats.createdPerMonth || [],
         backgroundColor: "rgba(59, 130, 246, 0.8)",
         borderColor: "rgb(59, 130, 246)",
         borderWidth: 1,
@@ -217,7 +424,7 @@ const Dashboard = () => {
       },
       {
         label: "Cover Letters",
-        data: coverLetterStats.createdPerMonth,
+        data: coverLetterStats.createdPerMonth || [],
         backgroundColor: "rgba(236, 72, 153, 0.8)",
         borderColor: "rgb(236, 72, 153)",
         borderWidth: 1,
@@ -228,6 +435,7 @@ const Dashboard = () => {
 
   // Calculate and create data for User Growth Rate
   const calculateGrowthRate = (data) => {
+    if (!data || !data.length) return [];
     return data.map((value, index) => {
       if (index === 0) return 0;
       const previousValue = data[index - 1];
@@ -240,7 +448,7 @@ const Dashboard = () => {
     datasets: [
       {
         label: "User Growth Rate (%)",
-        data: calculateGrowthRate(userStats.monthlyActiveUsers),
+        data: calculateGrowthRate(userStats.monthlyActiveUsers || []),
         borderColor: "rgb(16, 185, 129)",
         backgroundColor: "rgba(16, 185, 129, 0.5)",
         tension: 0.4,
@@ -250,9 +458,17 @@ const Dashboard = () => {
 
   // Calculate and create data for Average Revenue per User
   const calculateARPU = () => {
+    if (!revenueStats.monthlyRevenue || !userStats.monthlyActiveUsers)
+      return [];
+    if (
+      !revenueStats.monthlyRevenue.length ||
+      !userStats.monthlyActiveUsers.length
+    )
+      return [];
+
     return months.map((_, index) => {
-      const monthlyRevenue = revenueStats.monthlyRevenue[index];
-      const monthlyUsers = userStats.monthlyActiveUsers[index];
+      const monthlyRevenue = revenueStats.monthlyRevenue[index] || 0;
+      const monthlyUsers = userStats.monthlyActiveUsers[index] || 1; // Avoid division by zero
       return monthlyRevenue / monthlyUsers;
     });
   };
@@ -277,7 +493,7 @@ const Dashboard = () => {
       {
         type: "bar",
         label: "Monthly Revenue",
-        data: revenueStats.monthlyRevenue,
+        data: revenueStats.monthlyRevenue || [],
         backgroundColor: "rgba(234, 179, 8, 0.8)",
         borderColor: "rgb(234, 179, 8)",
         borderWidth: 1,
@@ -287,7 +503,7 @@ const Dashboard = () => {
       {
         type: "line",
         label: "Active Users",
-        data: userStats.monthlyActiveUsers,
+        data: userStats.monthlyActiveUsers || [],
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         borderWidth: 2,
@@ -388,6 +604,14 @@ const Dashboard = () => {
     },
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-slate-200 text-xl">Loading dashboard data...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6 text-slate-200">
@@ -399,18 +623,16 @@ const Dashboard = () => {
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h3 className="text-lg font-semibold text-blue-400">Total Users</h3>
           <p className="text-3xl font-bold text-blue-500 mt-2">
-            {userStats.totalUsers.toLocaleString()}
+            {(userStats.totalUsers || 0).toLocaleString()}
           </p>
           <p className="text-sm text-slate-400 mt-1">
-            Active: {userStats.activeUsers.toLocaleString()}
+            <p className="text-sm text-slate-400 mt-1">All Time</p>
           </p>
         </div>
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h3 className="text-lg font-semibold text-pink-400">Total CVs</h3>
           <p className="text-3xl font-bold text-pink-500 mt-2">
-            {cvStats.createdPerMonth
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString()}
+            {(totalsData?.totalCVs || 0).toLocaleString()}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Time</p>
         </div>
@@ -419,9 +641,7 @@ const Dashboard = () => {
             Total Cover Letters
           </h3>
           <p className="text-3xl font-bold text-purple-500 mt-2">
-            {coverLetterStats.createdPerMonth
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString()}
+            {(totalsData?.totalCoverLetters || 0).toLocaleString()}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Time</p>
         </div>
@@ -430,7 +650,7 @@ const Dashboard = () => {
             Total Revenue
           </h3>
           <p className="text-3xl font-bold text-yellow-500 mt-2">
-            {formatCurrency(revenueStats.totalRevenue)}
+            {formatCurrency(revenueStats.totalRevenue || 0)}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Time</p>
         </div>
@@ -442,7 +662,7 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
             Revenue Trend
           </h2>
-          <Line options={chartOptions} data={revenueChartData} />
+          <Line options={chartOptions} data={lineChartData} />
         </div>
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
@@ -513,6 +733,14 @@ const Dashboard = () => {
             <tbody className="divide-y divide-slate-700">
               {months.slice(-6).map((month, index) => {
                 const actualIndex = months.length - 6 + index;
+                // Safely access values with fallbacks
+                const revenue = revenueStats.monthlyRevenue?.[actualIndex] || 0;
+                const activeUsers =
+                  userStats.monthlyActiveUsers?.[actualIndex] || 0;
+                const cvsCreated = cvStats.createdPerMonth?.[actualIndex] || 0;
+                const clsCreated =
+                  coverLetterStats.createdPerMonth?.[actualIndex] || 0;
+
                 return (
                   <tr
                     key={month}
@@ -522,18 +750,13 @@ const Dashboard = () => {
                       {month}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {formatCurrency(revenueStats.monthlyRevenue[actualIndex])}
+                      {formatCurrency(revenue)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {userStats.monthlyActiveUsers[
-                        actualIndex
-                      ].toLocaleString()}
+                      {activeUsers.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {(
-                        cvStats.createdPerMonth[actualIndex] +
-                        coverLetterStats.createdPerMonth[actualIndex]
-                      ).toLocaleString()}
+                      {(cvsCreated + clsCreated).toLocaleString()}
                     </td>
                   </tr>
                 );

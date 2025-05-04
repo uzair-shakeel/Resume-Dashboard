@@ -4,7 +4,7 @@ import axios from "axios";
 export const api = axios.create({
   baseURL:
     process.env.NODE_ENV === "development"
-      ? "/api" // Use the local proxy defined in vite.config.js
+      ? "http://localhost:3000/api" // Point to Resume-Builder API
       : "https://qt6hfks5dj.execute-api.eu-central-1.amazonaws.com/development",
   headers: {
     "Content-Type": "application/json",
@@ -29,7 +29,9 @@ api.interceptors.response.use(
         console.error(
           "Network error occurred. This might be due to CORS or connectivity issues."
         );
-        console.error("Check your Vite proxy configuration in vite.config.js");
+        console.error(
+          "Check that the Resume-Builder API is running at http://localhost:3000"
+        );
       }
     } else {
       // Error in request setup

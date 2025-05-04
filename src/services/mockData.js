@@ -1,3 +1,9 @@
+/**
+ * NOTE: This mock data is no longer being used in the application.
+ * The application now retrieves data from the Resume-Builder API running at http://localhost:3000.
+ * This file is kept for reference purposes only.
+ */
+
 // Mock ships data based on the new API format
 export const MOCK_SHIPS = [
   {
