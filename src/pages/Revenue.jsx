@@ -11,12 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
-import {
-  getRevenueAnalytics,
-  getDetailedRevenueAnalytics,
-} from "../services/analyticsService";
-import { getAllPayments } from "../services/paymentService";
+import { Line, Doughnut } from "react-chartjs-2";
 import { toast } from "react-toastify";
 
 ChartJS.register(
@@ -32,47 +27,29 @@ ChartJS.register(
 );
 
 const Revenue = () => {
-  const [revenueStats, setRevenueStats] = useState({
+  const [revenueData, setRevenueData] = useState({
     totalRevenue: 0,
-    monthlyRevenue: [],
-    revenueBySource: [],
-  });
-  const [detailedStats, setDetailedStats] = useState({
-    monthly: [],
+    monthlyAverage: 0,
+    latestMonthRevenue: 0,
     arpu: 0,
     arppu: 0,
     conversionRate: 0,
+    monthlyBreakdown: [],
+    revenueBySource: [],
+    currency: "USD",
   });
-  const [payments, setPayments] = useState([]);
-  const [months, setMonths] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        // Fetch revenue analytics
-        const revenueData = await getRevenueAnalytics();
-        setRevenueStats({
-          totalRevenue: revenueData.totalRevenue || 0,
-          monthlyRevenue: revenueData.monthlyRevenue || [],
-          revenueBySource: revenueData.revenueBySource || [],
-        });
-        setMonths(revenueData.months || []);
-
-        // Fetch detailed revenue analytics
-        const detailedData = await getDetailedRevenueAnalytics();
-        setDetailedStats({
-          monthly: detailedData.monthly || [],
-          arpu: detailedData.arpu || 0,
-          arppu: detailedData.arppu || 0,
-          conversionRate: detailedData.conversionRate || 0,
-        });
-
-        // Fetch payments
-        const paymentsData = await getAllPayments();
-        setPayments(paymentsData.payments || []);
+        const response = await fetch("/api/analytics/revenue/dashboard");
+        if (!response.ok) {
+          throw new Error("Failed to fetch revenue data");
+        }
+        const data = await response.json();
+        setRevenueData(data);
       } catch (error) {
         console.error("Error fetching revenue data:", error);
         toast.error("Failed to fetch revenue analytics data");
@@ -85,11 +62,13 @@ const Revenue = () => {
   }, []);
 
   const lineChartData = {
-    labels: months,
+    labels: revenueData.monthlyBreakdown.map((item) => item.month).reverse(),
     datasets: [
       {
         label: "Monthly Revenue",
-        data: revenueStats.monthlyRevenue,
+        data: revenueData.monthlyBreakdown
+          .map((item) => item.revenue)
+          .reverse(),
         borderColor: "rgb(234, 179, 8)",
         backgroundColor: "rgba(234, 179, 8, 0.5)",
         tension: 0.4,
@@ -98,10 +77,12 @@ const Revenue = () => {
   };
 
   const subscriptionChartData = {
-    labels: revenueStats.revenueBySource.map((type) => type.source),
+    labels: revenueData.revenueBySource.map(
+      (type) => `${type._id.plan} - ${type._id.type}`
+    ),
     datasets: [
       {
-        data: revenueStats.revenueBySource.map((type) => type.amount),
+        data: revenueData.revenueBySource.map((type) => type.revenue),
         backgroundColor: [
           "rgba(59, 130, 246, 0.8)", // Blue - Monthly Plan
           "rgba(147, 51, 234, 0.8)", // Purple - Quarterly Plan
@@ -208,7 +189,7 @@ const Revenue = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: revenueData.currency,
     }).format(amount);
   };
 
@@ -235,7 +216,7 @@ const Revenue = () => {
             Total Revenue
           </h3>
           <p className="text-3xl font-bold text-yellow-500 mt-2">
-            {formatCurrency(revenueStats.totalRevenue)}
+            {formatCurrency(revenueData.totalRevenue)}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Time</p>
         </div>
@@ -244,25 +225,14 @@ const Revenue = () => {
             Monthly Average
           </h3>
           <p className="text-3xl font-bold text-emerald-500 mt-2">
-            {formatCurrency(
-              revenueStats.monthlyRevenue.length > 0
-                ? revenueStats.monthlyRevenue.reduce((a, b) => a + b, 0) /
-                    revenueStats.monthlyRevenue.length
-                : 0
-            )}
+            {formatCurrency(revenueData.monthlyAverage)}
           </p>
           <p className="text-sm text-slate-400 mt-1">Per Month</p>
         </div>
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h3 className="text-lg font-semibold text-blue-400">Latest Month</h3>
           <p className="text-3xl font-bold text-blue-500 mt-2">
-            {formatCurrency(
-              revenueStats.monthlyRevenue.length > 0
-                ? revenueStats.monthlyRevenue[
-                    revenueStats.monthlyRevenue.length - 1
-                  ]
-                : 0
-            )}
+            {formatCurrency(revenueData.latestMonthRevenue)}
           </p>
           <p className="text-sm text-slate-400 mt-1">Current Period</p>
         </div>
@@ -275,7 +245,7 @@ const Revenue = () => {
             ARPU (Average Revenue Per User)
           </h3>
           <p className="text-3xl font-bold text-purple-500 mt-2">
-            {formatCurrency(detailedStats.arpu)}
+            {formatCurrency(revenueData.arpu)}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Users</p>
         </div>
@@ -284,7 +254,7 @@ const Revenue = () => {
             ARPPU (Average Revenue Per Paying User)
           </h3>
           <p className="text-3xl font-bold text-pink-500 mt-2">
-            {formatCurrency(detailedStats.arppu)}
+            {formatCurrency(revenueData.arppu)}
           </p>
           <p className="text-sm text-slate-400 mt-1">Paying Users Only</p>
         </div>
@@ -293,7 +263,7 @@ const Revenue = () => {
             Conversion Rate
           </h3>
           <p className="text-3xl font-bold text-indigo-500 mt-2">
-            {detailedStats.conversionRate}%
+            {revenueData.conversionRate.toFixed(1)}%
           </p>
           <p className="text-sm text-slate-400 mt-1">Users to Paying Users</p>
         </div>
@@ -342,16 +312,16 @@ const Revenue = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {detailedStats.monthly.map((month) => (
+              {revenueData.monthlyBreakdown.map((month) => (
                 <tr
-                  key={`${month.year}-${month.month}`}
+                  key={month.month}
                   className="bg-slate-900 hover:bg-slate-800 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                    {month.monthName} {month.year}
+                    {month.month}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-yellow-400">
-                    {formatCurrency(month.amount)}
+                    {formatCurrency(month.revenue)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                     {month.users} ({month.payingUsers} paying)
@@ -369,7 +339,7 @@ const Revenue = () => {
                           : "bg-red-900 text-red-200"
                       }`}
                     >
-                      {month.conversionRate}%
+                      {month.conversionRate.toFixed(1)}%
                     </span>
                   </td>
                 </tr>
