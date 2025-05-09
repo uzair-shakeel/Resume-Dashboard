@@ -63,9 +63,9 @@ const Dashboard = () => {
     downloadedPerMonth: [],
     popularTemplates: [],
   });
-  const [revenueStats, setRevenueStats] = useState({
+  const [revenueData, setRevenueData] = useState({
     totalRevenue: 0,
-    monthlyRevenue: [],
+    monthlyBreakdown: [],
     revenueBySource: [],
   });
   const [userStats, setUserStats] = useState({
@@ -76,6 +76,7 @@ const Dashboard = () => {
     userGrowth: [],
   });
   const [months, setMonths] = useState([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -155,20 +156,19 @@ const Dashboard = () => {
 
         // Fetch Revenue data (keep this as it's not in totals)
         try {
-          revenueData = await getRevenueAnalytics();
-          setRevenueStats({
-            totalRevenue: revenueData.totalRevenue || 0,
-            monthlyRevenue: revenueData.monthlyRevenue || [],
-            revenueBySource: revenueData.revenueBySource || [],
+          const revenueResponse = await fetch(
+            "/api/analytics/revenue/dashboard"
+          );
+          if (!revenueResponse.ok) throw new Error("Failed to fetch revenue");
+          const data = await revenueResponse.json();
+          setRevenueData({
+            totalRevenue: data.totalRevenue || 0,
+            monthlyBreakdown: data.monthlyBreakdown || [],
+            revenueBySource: data.revenueBySource || [],
           });
         } catch (error) {
-          console.error("Error fetching revenue data:", error);
+          console.error("Error fetching revenue:", error);
           toast.error("Failed to load revenue data");
-          setRevenueStats({
-            totalRevenue: 0,
-            monthlyRevenue: Array(monthsData.length).fill(0),
-            revenueBySource: [],
-          });
         }
 
         // Fetch User data
@@ -221,6 +221,19 @@ const Dashboard = () => {
             userGrowth: Array(monthsData.length).fill(0),
           });
         }
+
+        // Fetch total revenue from revenue dashboard
+        try {
+          const revenueResponse = await fetch(
+            "/api/analytics/revenue/dashboard"
+          );
+          if (!revenueResponse.ok) throw new Error("Failed to fetch revenue");
+          const revenueData = await revenueResponse.json();
+          setTotalRevenue(revenueData.totalRevenue || 0);
+        } catch (error) {
+          console.error("Error fetching revenue:", error);
+          toast.error("Failed to load revenue data");
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error("Failed to load dashboard data");
@@ -232,12 +245,15 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const lineChartData = {
-    labels: months,
+  // Revenue trend chart data
+  const revenueTrendData = {
+    labels: revenueData.monthlyBreakdown.map((item) => item.month).reverse(),
     datasets: [
       {
         label: "Monthly Revenue",
-        data: revenueStats.monthlyRevenue || [],
+        data: revenueData.monthlyBreakdown
+          .map((item) => item.revenue)
+          .reverse(),
         borderColor: "rgb(234, 179, 8)",
         backgroundColor: "rgba(234, 179, 8, 0.5)",
         tension: 0.4,
@@ -245,26 +261,32 @@ const Dashboard = () => {
     ],
   };
 
-  const documentChartData = {
-    labels: months,
+  // Revenue sources chart data
+  const revenueSourcesData = {
+    labels: revenueData.revenueBySource.map(
+      (item) => `${item._id.plan} - ${item._id.type}`
+    ),
     datasets: [
       {
-        label: "CVs Created",
-        data: cvStats.createdPerMonth || [],
-        borderColor: "rgb(59, 130, 246)",
-        backgroundColor: "rgba(59, 130, 246, 0.5)",
-        tension: 0.4,
-      },
-      {
-        label: "Cover Letters Created",
-        data: coverLetterStats.createdPerMonth || [],
-        borderColor: "rgb(236, 72, 153)",
-        backgroundColor: "rgba(236, 72, 153, 0.5)",
-        tension: 0.4,
+        data: revenueData.revenueBySource.map((item) => item.revenue),
+        backgroundColor: [
+          "rgba(59, 130, 246, 0.8)", // Blue
+          "rgba(147, 51, 234, 0.8)", // Purple
+          "rgba(16, 185, 129, 0.8)", // Green
+          "rgba(234, 179, 8, 0.8)", // Yellow
+        ],
+        borderColor: [
+          "rgb(59, 130, 246)",
+          "rgb(147, 51, 234)",
+          "rgb(16, 185, 129)",
+          "rgb(234, 179, 8)",
+        ],
+        borderWidth: 1,
       },
     ],
   };
 
+  // User type chart data
   const userTypeChartData = {
     labels: userStats.userTypes?.map((type) => type.type) || [],
     datasets: [
@@ -283,29 +305,6 @@ const Dashboard = () => {
           "rgb(16, 185, 129)",
           "rgb(234, 179, 8)",
           "rgb(236, 72, 153)",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const revenueSourceChartData = {
-    labels: revenueStats.revenueBySource?.map((source) => source.source) || [],
-    datasets: [
-      {
-        data:
-          revenueStats.revenueBySource?.map((source) => source.amount) || [],
-        backgroundColor: [
-          "rgba(59, 130, 246, 0.8)", // Blue
-          "rgba(147, 51, 234, 0.8)", // Purple
-          "rgba(16, 185, 129, 0.8)", // Green
-          "rgba(234, 179, 8, 0.8)", // Yellow
-        ],
-        borderColor: [
-          "rgb(59, 130, 246)",
-          "rgb(147, 51, 234)",
-          "rgb(16, 185, 129)",
-          "rgb(234, 179, 8)",
         ],
         borderWidth: 1,
       },
@@ -332,6 +331,12 @@ const Dashboard = () => {
         bodyColor: "#E2E8F0",
         padding: 12,
         boxPadding: 8,
+        callbacks: {
+          label: (context) => {
+            const value = context.raw;
+            return `${context.dataset.label}: ${formatCurrency(value)}`;
+          },
+        },
       },
     },
     scales: {
@@ -342,6 +347,7 @@ const Dashboard = () => {
         },
         ticks: {
           color: "#94A3B8",
+          callback: (value) => formatCurrency(value),
         },
       },
       x: {
@@ -380,16 +386,9 @@ const Dashboard = () => {
             const value = context.raw;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            const label = context.chart.data.labels[context.dataIndex];
-            return context.parsed === null
-              ? null
-              : label === "Total Revenue"
-              ? `${label}: ${formatCurrency(value)}`
-              : `${label}: ${
-                  context.chart.id === "revenue-chart"
-                    ? formatCurrency(value)
-                    : value.toLocaleString()
-                } (${percentage}%)`;
+            return `${context.label}: ${formatCurrency(
+              value
+            )} (${percentage}%)`;
           },
         },
       },
@@ -399,11 +398,9 @@ const Dashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    // Handle undefined, null, or NaN values
     if (amount === undefined || amount === null || isNaN(amount)) {
       return "$0.00";
     }
-
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -458,16 +455,15 @@ const Dashboard = () => {
 
   // Calculate and create data for Average Revenue per User
   const calculateARPU = () => {
-    if (!revenueStats.monthlyRevenue || !userStats.monthlyActiveUsers)
-      return [];
+    if (!revenueData.monthlyRevenue || !userStats.monthlyActiveUsers) return [];
     if (
-      !revenueStats.monthlyRevenue.length ||
+      !revenueData.monthlyRevenue.length ||
       !userStats.monthlyActiveUsers.length
     )
       return [];
 
     return months.map((_, index) => {
-      const monthlyRevenue = revenueStats.monthlyRevenue[index] || 0;
+      const monthlyRevenue = revenueData.monthlyRevenue[index] || 0;
       const monthlyUsers = userStats.monthlyActiveUsers[index] || 1; // Avoid division by zero
       return monthlyRevenue / monthlyUsers;
     });
@@ -488,12 +484,14 @@ const Dashboard = () => {
 
   // New combination chart for Revenue & Users
   const revenueUsersChartData = {
-    labels: months,
+    labels: revenueData.monthlyBreakdown.map((item) => item.month).reverse(),
     datasets: [
       {
         type: "bar",
         label: "Monthly Revenue",
-        data: revenueStats.monthlyRevenue || [],
+        data: revenueData.monthlyBreakdown
+          .map((item) => item.revenue)
+          .reverse(),
         backgroundColor: "rgba(234, 179, 8, 0.8)",
         borderColor: "rgb(234, 179, 8)",
         borderWidth: 1,
@@ -503,7 +501,7 @@ const Dashboard = () => {
       {
         type: "line",
         label: "Active Users",
-        data: userStats.monthlyActiveUsers || [],
+        data: revenueData.monthlyBreakdown.map((item) => item.users).reverse(),
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         borderWidth: 2,
@@ -650,7 +648,7 @@ const Dashboard = () => {
             Total Revenue
           </h3>
           <p className="text-3xl font-bold text-yellow-500 mt-2">
-            {formatCurrency(revenueStats.totalRevenue || 0)}
+            {formatCurrency(revenueData.totalRevenue)}
           </p>
           <p className="text-sm text-slate-400 mt-1">All Time</p>
         </div>
@@ -662,13 +660,13 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
             Revenue Trend
           </h2>
-          <Line options={chartOptions} data={lineChartData} />
+          <Line options={chartOptions} data={revenueTrendData} />
         </div>
         <div className="bg-slate-900 rounded-lg p-6 shadow-lg border border-slate-700">
           <h2 className="text-lg font-semibold mb-4 text-slate-200">
             Document Creation Trend
           </h2>
-          <Line options={chartOptions} data={documentChartData} />
+          <Line options={chartOptions} data={documentTypeChartData} />
         </div>
       </div>
 
@@ -687,7 +685,7 @@ const Dashboard = () => {
             Revenue Sources
           </h2>
           <div className="relative" style={{ height: "300px" }}>
-            <Doughnut options={doughnutOptions} data={revenueSourceChartData} />
+            <Doughnut options={doughnutOptions} data={revenueSourcesData} />
           </div>
         </div>
       </div>
@@ -731,36 +729,25 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {months.slice(-6).map((month, index) => {
-                const actualIndex = months.length - 6 + index;
-                // Safely access values with fallbacks
-                const revenue = revenueStats.monthlyRevenue?.[actualIndex] || 0;
-                const activeUsers =
-                  userStats.monthlyActiveUsers?.[actualIndex] || 0;
-                const cvsCreated = cvStats.createdPerMonth?.[actualIndex] || 0;
-                const clsCreated =
-                  coverLetterStats.createdPerMonth?.[actualIndex] || 0;
-
-                return (
-                  <tr
-                    key={month}
-                    className="bg-slate-900 hover:bg-slate-800 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {month}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {formatCurrency(revenue)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {activeUsers.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                      {(cvsCreated + clsCreated).toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
+              {revenueData.monthlyBreakdown.map((monthData) => (
+                <tr
+                  key={monthData.month}
+                  className="bg-slate-900 hover:bg-slate-800 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {monthData.month}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-yellow-400">
+                    {formatCurrency(monthData.revenue)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {monthData.users.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                    {monthData.documents || 0}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
