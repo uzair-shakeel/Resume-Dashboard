@@ -436,7 +436,20 @@ const Dashboard = () => {
     return data.map((value, index) => {
       if (index === 0) return 0;
       const previousValue = data[index - 1];
-      return ((value - previousValue) / previousValue) * 100;
+
+      // If current value is 0, return 0% growth
+      if (value === 0) return 0;
+
+      // If previous value was 0 and current value is positive,
+      // this represents new business activity (return 100% growth)
+      if (previousValue === 0 && value > 0) return 100;
+
+      // Normal case: calculate percentage change
+      const growthRate =
+        ((value - previousValue) / Math.abs(previousValue)) * 100;
+
+      // Cap growth rate at 100% for better visualization
+      return Math.min(growthRate, 100);
     });
   };
 
