@@ -1,26 +1,36 @@
 import axios from "axios";
 
+// Determine if we're in development mode
+const isDevelopment =
+  import.meta.env.DEV || window.location.hostname === "localhost";
+
 // Create axios instance with base URL and timeout
 const api = axios.create({
-  // For production, use environment variable: import.meta.env.VITE_API_URL || "/api"
-  baseURL: "/api", // Use the proxy in vite.config.js
-  timeout: 15000, // 15 seconds
+  baseURL: "https://resume-builderrr.vercel.app/api", // Use proxy in dev, full URL in prod
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Important for cookies/sessions
 });
 
 // Add a specific health check endpoint for the login page to use
 export const checkApiHealth = async () => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    const response = await fetch("/api/health", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      isDevelopment
+        ? "/api/health"
+        : "https://resume-builderrr.vercel.app/api/health",
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: controller.signal,
+      }
+    );
 
     clearTimeout(timeoutId);
     return response.ok;
@@ -29,10 +39,6 @@ export const checkApiHealth = async () => {
     return false;
   }
 };
-
-// Attempt to determine if we're in development mode
-const isDevelopment =
-  import.meta.env.DEV || window.location.hostname === "localhost";
 
 // Add request interceptor for authentication
 api.interceptors.request.use(
