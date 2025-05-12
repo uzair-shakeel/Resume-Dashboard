@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { User } from "lucide-react";
 import SettingSection from "./SettingSection";
 import axios from "axios";
+import { BaseURL, BaseUrl } from "../../utils/BaseURL";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -20,7 +21,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/auth/me", {
+        const response = await axios.get(`${BaseURL}/api/auth/me`, {
           withCredentials: true,
         });
         setUser(response.data);
@@ -82,7 +83,7 @@ const Profile = () => {
       };
 
       const response = await axios.put(
-        `http://localhost:3000/api/auth/update-profile`,
+        `${BaseURL}/api/auth/update-profile`,
         updateData,
         { withCredentials: true }
       );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Users, Plus, Edit2, Trash2, ChevronDown } from "lucide-react";
 import axios from "axios";
+import { BaseURL } from "../utils/BaseURL";
 
 // Role types for ship positions
 const SHIP_ROLES = [
@@ -36,7 +37,7 @@ const UsersPage = () => {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/users", {
+      const response = await axios.get(`${BaseURL}/api/users`, {
         withCredentials: true,
       });
       setUsers(response.data);
@@ -54,13 +55,11 @@ const UsersPage = () => {
     e.preventDefault();
     try {
       if (editingUser) {
-        await axios.put(
-          `http://localhost:3000/api/users/${editingUser._id}`,
-          formData,
-          { withCredentials: true }
-        );
+        await axios.put(`${BaseURL}/api/users/${editingUser._id}`, formData, {
+          withCredentials: true,
+        });
       } else {
-        await axios.post("http://localhost:3000/api/users", formData, {
+        await axios.post(`${BaseURL}/api/users`, formData, {
           withCredentials: true,
         });
       }
@@ -110,7 +109,7 @@ const UsersPage = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/api/users/${userId}`, {
+      await axios.delete(`${BaseURL}/api/users/${userId}`, {
         withCredentials: true,
       });
       fetchUsers();

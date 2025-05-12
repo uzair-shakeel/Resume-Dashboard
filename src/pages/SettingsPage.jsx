@@ -3,6 +3,7 @@ import axios from "axios";
 import Header from "../components/shared/Header";
 import DangerZone from "../components/settings/DangerZone";
 import Profile from "../components/settings/Profile";
+import { BaseURL } from "../utils/BaseURL";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const SettingsPage = () => {
     try {
       // Call logout endpoint
       await axios.post(
-        "http://localhost:3000/api/auth/logout",
+        `${BaseURL}/api/auth/logout`,
         {},
         { withCredentials: true }
       );

@@ -127,7 +127,6 @@ const Dashboard = () => {
           setMonths(monthsData);
         } catch (error) {
           console.error("Error fetching analytics totals:", error);
-          toast.error("Failed to load analytics totals data");
         }
 
         // Process CV data
@@ -168,7 +167,6 @@ const Dashboard = () => {
           });
         } catch (error) {
           console.error("Error fetching revenue:", error);
-          toast.error("Failed to load revenue data");
         }
 
         // Fetch User data
@@ -212,7 +210,7 @@ const Dashboard = () => {
           });
         } catch (error) {
           console.error("Error fetching user data:", error);
-          toast.error("Failed to load user data");
+
           setUserStats({
             totalUsers: 0,
             activeUsers: 0,
@@ -232,11 +230,9 @@ const Dashboard = () => {
           setTotalRevenue(revenueData.totalRevenue || 0);
         } catch (error) {
           console.error("Error fetching revenue:", error);
-          toast.error("Failed to load revenue data");
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
