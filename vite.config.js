@@ -10,9 +10,12 @@ export default defineConfig({
         target: "https://resume-builderrr.vercel.app",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path,
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
+        configure: (proxy, options) => {
+          // Additional proxy configuration if needed
+        },
       },
     },
-    cors: false,
+    cors: true,
   },
 });

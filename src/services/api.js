@@ -6,8 +6,8 @@ const isDevelopment =
 
 // Create axios instance with base URL and timeout
 const api = axios.create({
-  baseURL: "https://resume-builderrr.vercel.app/api", // Use proxy in dev, full URL in prod
-  timeout: 15000,
+  baseURL: isDevelopment ? "/api" : "https://resume-builderrr.vercel.app/api", // Use proxy in dev, full URL in prod
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -46,9 +46,7 @@ api.interceptors.request.use(
     // Log requests in development
     if (isDevelopment) {
       console.log(
-        `🚀 API Request: ${config.method.toUpperCase()} ${config.baseURL}${
-          config.url
-        }`
+        `🚀 API Request: ${config.method.toUpperCase()} ${config.url}`
       );
     }
 
