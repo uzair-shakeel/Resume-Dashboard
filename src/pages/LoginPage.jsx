@@ -104,18 +104,6 @@ const LoginPage = () => {
           Resume Dashboard Admin Login
         </h2>
 
-        {apiStatus === "offline" && (
-          <div className="mb-4 p-3 bg-amber-900/50 border border-amber-700 text-amber-200 text-sm rounded-md">
-            <p className="font-medium mb-1">
-              The Resume-Builder API appears to be offline.
-            </p>
-            <p>
-              Please make sure the Resume-Builder application is running on the
-              correct URL.
-            </p>
-          </div>
-        )}
-
         {error && (
           <div className="mb-4 p-3 bg-rose-900/50 border border-rose-700 text-rose-200 text-sm rounded-md">
             {error}
