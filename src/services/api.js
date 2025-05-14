@@ -4,14 +4,17 @@ import axios from "axios";
 const isDevelopment =
   import.meta.env.DEV || window.location.hostname === "localhost";
 
+// Define the production API URL
+const PROD_API_URL = "https://resume-builderrr.vercel.app/api";
+
 // Create axios instance with base URL and timeout
 const api = axios.create({
-  baseURL: isDevelopment ? "/api" : "https://resume-builderrr.vercel.app/api", // Use proxy in dev, full URL in prod
+  baseURL: isDevelopment ? "/api" : PROD_API_URL, // Use proxy in dev, full URL in prod
   timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for cookies/sessions
+  withCredentials: false, // Set to false for CORS in production
 });
 
 // Add a specific health check endpoint for the login page to use
@@ -21,13 +24,11 @@ export const checkApiHealth = async () => {
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     const response = await fetch(
-      isDevelopment
-        ? "/api/health"
-        : "https://resume-builderrr.vercel.app/api/health",
+      isDevelopment ? "/api/health" : `${PROD_API_URL}/health`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        credentials: isDevelopment ? "include" : "omit", // Omit credentials in production
         signal: controller.signal,
       }
     );
