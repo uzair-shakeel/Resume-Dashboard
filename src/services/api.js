@@ -101,7 +101,22 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Request was made but no response received (network error)
       console.error("🔴 Network Error: No response received", error.request);
-      errorMsg = "Network error: Could not connect to the API server";
+
+      // Check if the error might be related to CORS
+      if (
+        error.message &&
+        (error.message.includes("CORS") ||
+          error.message.includes("cross-origin") ||
+          error.message.includes("network error"))
+      ) {
+        console.error(
+          "This appears to be a CORS-related error. Please check your API CORS configuration."
+        );
+        errorMsg =
+          "Network error: Cross-origin request blocked. This is likely a CORS configuration issue.";
+      } else {
+        errorMsg = "Network error: Could not connect to the API server";
+      }
     } else {
       // Error in setting up the request
       console.error("🔴 Request Setup Error:", error.message);

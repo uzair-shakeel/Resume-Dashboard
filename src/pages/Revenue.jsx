@@ -13,6 +13,8 @@ import {
 } from "chart.js";
 import { Line, Doughnut } from "react-chartjs-2";
 import { toast } from "react-toastify";
+import { getRevenueDashboardData } from "../services/analyticsService";
+import ErrorBoundary from "../components/shared/ErrorBoundary";
 
 ChartJS.register(
   CategoryScale,
@@ -26,7 +28,7 @@ ChartJS.register(
   Legend
 );
 
-const Revenue = () => {
+const RevenueContent = () => {
   const [revenueData, setRevenueData] = useState({
     totalRevenue: 0,
     monthlyAverage: 0,
@@ -44,11 +46,7 @@ const Revenue = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/analytics/revenue/dashboard");
-        if (!response.ok) {
-          throw new Error("Failed to fetch revenue data");
-        }
-        const data = await response.json();
+        const data = await getRevenueDashboardData();
         setRevenueData(data);
       } catch (error) {
         console.error("Error fetching revenue data:", error);
@@ -351,5 +349,11 @@ const Revenue = () => {
     </div>
   );
 };
+
+const Revenue = () => (
+  <ErrorBoundary>
+    <RevenueContent />
+  </ErrorBoundary>
+);
 
 export default Revenue;

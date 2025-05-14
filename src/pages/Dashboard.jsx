@@ -19,6 +19,7 @@ import {
   getRevenueAnalytics,
   getAnalyticsTotals,
   getUserAnalytics,
+  getRevenueDashboardData,
 } from "../services/analyticsService";
 import { getAllUsers } from "../services/userService";
 import { toast } from "react-toastify";
@@ -155,11 +156,7 @@ const Dashboard = () => {
 
         // Fetch Revenue data (keep this as it's not in totals)
         try {
-          const revenueResponse = await fetch(
-            "/api/analytics/revenue/dashboard"
-          );
-          if (!revenueResponse.ok) throw new Error("Failed to fetch revenue");
-          const data = await revenueResponse.json();
+          const data = await getRevenueDashboardData();
           setRevenueData({
             totalRevenue: data.totalRevenue || 0,
             monthlyBreakdown: data.monthlyBreakdown || [],
@@ -222,11 +219,7 @@ const Dashboard = () => {
 
         // Fetch total revenue from revenue dashboard
         try {
-          const revenueResponse = await fetch(
-            "/api/analytics/revenue/dashboard"
-          );
-          if (!revenueResponse.ok) throw new Error("Failed to fetch revenue");
-          const revenueData = await revenueResponse.json();
+          const revenueData = await getRevenueDashboardData();
           setTotalRevenue(revenueData.totalRevenue || 0);
         } catch (error) {
           console.error("Error fetching revenue:", error);

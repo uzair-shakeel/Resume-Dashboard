@@ -24,6 +24,12 @@ export const getDetailedRevenueAnalytics = async () => {
   return response.data;
 };
 
+// Get Revenue Dashboard Data
+export const getRevenueDashboardData = async () => {
+  const response = await api.get("/analytics/revenue/dashboard");
+  return response.data;
+};
+
 // Get Analytics Totals
 export const getAnalyticsTotals = async () => {
   const response = await api.get("/analytics/totals");
