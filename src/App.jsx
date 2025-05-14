@@ -1,9 +1,10 @@
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { isAuthenticated, isAdmin } from "./services/authService";
+import { isAuthenticated } from "./services/authService";
 
 import Sidebar from "./components/shared/Sidebar";
 import { MockModeProvider } from "./context/MockModeContext";
+import AdminRoute from "./components/AdminRoute";
 
 import Dashboard from "./pages/Dashboard";
 import CVs from "./pages/CVs";
@@ -11,21 +12,6 @@ import CoverLetters from "./pages/CoverLetters";
 import Users from "./pages/Users";
 import Revenue from "./pages/Revenue";
 import LoginPage from "./pages/LoginPage";
-
-const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const authenticated = isAuthenticated();
-  const userIsAdmin = isAdmin();
-
-  if (!authenticated) {
-    return <Navigate to="/login" />;
-  }
-
-  if (adminOnly && !userIsAdmin) {
-    return <Navigate to="/" />;
-  }
-
-  return children;
-};
 
 function App() {
   const location = useLocation();
@@ -78,41 +64,41 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <ProtectedRoute>
+                  <AdminRoute>
                     <Dashboard />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route
                 path="/cvs"
                 element={
-                  <ProtectedRoute>
+                  <AdminRoute>
                     <CVs />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route
                 path="/cover-letters"
                 element={
-                  <ProtectedRoute>
+                  <AdminRoute>
                     <CoverLetters />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route
                 path="/users"
                 element={
-                  <ProtectedRoute adminOnly>
+                  <AdminRoute>
                     <Users />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route
                 path="/revenue"
                 element={
-                  <ProtectedRoute adminOnly>
+                  <AdminRoute>
                     <Revenue />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />
